@@ -5,13 +5,18 @@ type timer_definition = {
 }
 
 let timer_defs = [|
+  {work = 15; break = 5; long_break = 10};
   {work = 25 * 60; break = 5 * 60; long_break = 30 * 60};
   {work = 50 * 60; break = 10 * 60; long_break = 60 * 60};
   {work = 15 * 60; break = 5 * 60; long_break = 15 * 60};
-  {work = 2 * 60; break = 1 * 60; long_break = 3 * 60};
 |]
 
-let string_of_timerdef x = Printf.sprintf "%d/%d/%d" (x.work / 60) (x.break / 60) (x.long_break / 60)
+let string_of_timerdef x = Printf.sprintf "%d/%d/%d"
+                             (x.work / 60) (x.break / 60) (x.long_break / 60)
+
+let timestring_of_seconds x = Printf.sprintf "%d:%02d" (x / 60) (x mod 60)
+
+let tap f x = f x; x
 
 type update_msg =
   | Play
@@ -27,8 +32,6 @@ module Pomodoro = struct
     | Work of int
     | WaitRest of int
     | Rest of int
-    | WaitLongRest of int
-    | LongRest of int
     | Finished
 
   type model = {
@@ -37,46 +40,59 @@ module Pomodoro = struct
     def: timer_definition;
   }
 
-  let update m msg = match msg, m with
-    | Play, {state = Idle; _}                        -> {m with state = Setting 0}
-    | Play, {state = Setting i; _}                   -> let def = timer_defs.(i) in {def;
-                                                                                     state = Work def.work;
-                                                                                     cycle = 0}
-    | Play, {state = Work _; _}
-    | Play, {state = Rest _; _}
-    | Play, {state = LongRest _; _}                  -> {m with state = Finished}
-    | Play, {state = Finished; _}                    -> {m with state = Idle}
-    | Play, {state = WaitWork x; _}                  -> {m with state = WaitWork x}
-    | Play, {state = WaitRest x; _}                  -> {m with state = Rest x}
-    | Play, {state = WaitLongRest x; _}              -> {m with state = LongRest x}
+  let notify_state {state; _} =
+    let summary = (match state with
+        | Idle -> "idle"
+        | Setting _ -> "Setting durations"
+        | WaitWork _ -> "Waiting to start work"
+        | Work _ -> "Work began"
+        | Rest _ -> "Rest began"
+        | WaitRest _ -> "Waiting to start rest"
+        | Finished -> "end"
+      ) in
+    Notification.notify ~summary ()
+    |> Lwt_main.run
+    |> ignore
 
-    | Tick d_i, {state = Work i; _} when i > d_i     -> {m with state = Work (i - d_i)}
-    | Tick _,   {state = Work _; cycle = 2; _}       -> {m with state = WaitLongRest m.def.long_break}
-    | Tick _,   {state = Work _; cycle; _}           -> {m with state = WaitRest m.def.break;
-                                                                cycle = cycle + 1}
-    | Tick d_i, {state = Rest i; _} when i > d_i     -> {m with state = Rest (i - 1)}
-    | Tick _,   {state = Rest _; _}                  -> {m with state = WaitWork m.def.work}
-    | Tick d_i, {state = LongRest i; _} when i > d_i -> {m with state = LongRest (i - 1)}
-    | Tick _,   {state = LongRest _; _}              -> {m with state = Finished}
-    | Tick _,   _                                    -> m
+  let update m msg =
+    match msg, m.state with
+    | Play, Idle      -> {m with state = Setting 0}
+    | Play, Setting i -> let def = timer_defs.(i) in {def;
+                                                      state = Work def.work;
+                                                      cycle = 0}
+                                                     |> tap notify_state
+    | Play, Work _
+    | Play, Rest _
+    | Play, Finished   -> {m with state = Idle}
+    | Play, WaitWork t -> {m with state = Work t}
+    | Play, WaitRest t -> {m with state = Rest t}
 
-    | DefineTimer def', _                            -> {m with def = def'} (* TODO get rid of this message *)
+    | Tick d_t, Work t when t > d_t      -> {m with state = Work (t - d_t)}
+    | Tick _,   Work _                   -> {m with state = WaitRest (if m.cycle >= 2
+                                                                      then m.def.long_break
+                                                                      else m.def.break)}
+                                            |> tap notify_state
+    | Tick d_t, Rest t when t > d_t     -> {m with state = Rest (t - d_t)}
+    | Tick _,   Rest _ when m.cycle < 2 -> {m with state = WaitWork m.def.work;
+                                                   cycle = m.cycle + 1}
+                                           |> tap notify_state
+    | Tick _,   Rest _                  -> {m with state = Finished}
+    | Tick _,   _                       -> m
 
-    | Next, {state = Setting i; _}                   -> {m with state = Setting ((i + 1) mod (Array.length timer_defs))}
-    | Next, _                                        -> m
+    | DefineTimer def', _ -> {m with def = def'} (* TODO get rid of this message *)
+    | Next, Setting i -> {m with state = Setting ((i + 1) mod (Array.length timer_defs))}
+    | Next, _         -> m
 
-  let view {state; cycle; def} =
+  let view {state; _} =
     let s = (
       match state with
       | Idle               -> "IDL"
       | Setting i          -> string_of_timerdef timer_defs.(i)
-      | WaitWork i         -> "w " ^ string_of_int (i)
-      | Work i             -> "W " ^ string_of_int (i)
-      | Rest i
-      | LongRest i         -> "R " ^ string_of_int (i)
-      | WaitRest i
-      | WaitLongRest i     -> "r " ^ string_of_int (i)
-      | Finished           -> Printf.sprintf "FIN %dm" (cycle * def.work)
+      | WaitWork i         -> "w " ^ timestring_of_seconds i
+      | Work i             -> "W " ^ timestring_of_seconds i
+      | Rest i             -> "R " ^ timestring_of_seconds i
+      | WaitRest i         -> "r " ^ timestring_of_seconds i
+      | Finished           -> "FIN"
     ) in
       print_endline s
 end
@@ -129,10 +145,12 @@ let () =
       cycle = 0;
       def = timer_defs.(0);
     }:Pomodoro.model) Pomodoro.update Pomodoro.view in
+    app#render ();
   let _thread = Thread.create (fun _ ->
+      let t = 1 in
       while true; do
-        Unix.sleep 1;
-        app#process (Tick 1)
+        Unix.sleep t;
+        app#process (Tick t)
       done
     ) () in
   let ch = open_fifo "/tmp/pipe2egg.sock" in

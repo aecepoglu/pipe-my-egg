@@ -7,6 +7,9 @@ class ['m, 'e] application model update view = object(_self)
   val view : 'm view_t = view
   val update : ('e, 'm) update_t = update
 
+  method render () =
+    view model;
+
   method process msg =
     model <- update model msg;
     view model;
