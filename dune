@@ -1,4 +1,4 @@
 (executable
-	(name pipe2egg)
+	(name pipemyegg)
 	(libraries unix threads obus.notification)
 )

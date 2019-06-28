@@ -5,23 +5,22 @@ type timer_definition = {
 }
 
 let timer_defs = [|
-  {work = 15; break = 5; long_break = 10};
   {work = 25 * 60; break = 5 * 60; long_break = 30 * 60};
   {work = 50 * 60; break = 10 * 60; long_break = 60 * 60};
   {work = 15 * 60; break = 5 * 60; long_break = 15 * 60};
+  {work = 15; break = 5; long_break = 10};
 |]
 
 let string_of_timerdef x = Printf.sprintf "%d/%d/%d"
                              (x.work / 60) (x.break / 60) (x.long_break / 60)
 
-let timestring_of_seconds x = Printf.sprintf "%d:%02d" (x / 60) (x mod 60)
+let timestring_of_seconds x = Printf.sprintf "%dm" (x / 60)
 
 let tap f x = f x; x
 
 type update_msg =
   | Play
   | Tick of int
-  | DefineTimer of timer_definition
   | Next
 
 module Pomodoro = struct
@@ -60,7 +59,6 @@ module Pomodoro = struct
     | Play, Setting i -> let def = timer_defs.(i) in {def;
                                                       state = Work def.work;
                                                       cycle = 0}
-                                                     |> tap notify_state
     | Play, Work _
     | Play, Rest _
     | Play, Finished   -> {m with state = Idle}
@@ -79,7 +77,6 @@ module Pomodoro = struct
     | Tick _,   Rest _                  -> {m with state = Finished}
     | Tick _,   _                       -> m
 
-    | DefineTimer def', _ -> {m with def = def'} (* TODO get rid of this message *)
     | Next, Setting i -> {m with state = Setting ((i + 1) mod (Array.length timer_defs))}
     | Next, _         -> m
 
@@ -105,29 +102,10 @@ let msg_of_string str =
                                           errmsg
                                           usage
                                        ) in
-  let def_err  = parsing_err "'def (work) (break) (long break)'" in
-  let def_key_err key given = def_err (spf
-                                         "'def' message expects '%s' to be a number but '%s' isn't"
-                                         key
-                                         given
-                                      ) in
     match String.split_on_char ' ' str with
     | ["play"] -> Ok Play
     | ["next"] -> Ok Next
-    | ["def"; work'; break'; long_break'] ->
-       let f = int_of_string_opt in
-         (match (f work'), (f break'), (f long_break') with
-          | Some work, Some break, Some long_break ->
-             Ok (DefineTimer { work = 60 * work;
-                               break = 60 * break;
-                               long_break = 60 * long_break
-                             })
-          | None, _, _ -> def_key_err "work" work'
-          | _, None, _ -> def_key_err "break" break'
-          | _, _, None -> def_key_err "long break" long_break'
-         )
-    | "def" :: l -> def_err (spf "'def' message must be called with %d arguments but it is given %d" 3 (List.length l - 1))
-    | h :: _ -> parsing_err "def (work) (break) (long break) | stop" (spf "'%s' isnt't a recognized command" h)
+    | h :: _ -> parsing_err "'play' | 'next'" (spf "'%s' isnt't a recognized command" h)
     | [] -> Error "Empty message"
 
 let open_fifo path =
@@ -136,8 +114,17 @@ let open_fifo path =
    else
      ()
   );
-  Unix.mkfifo path 0o640;
-  open_in path
+  let perm = 0o640 in
+    Unix.mkfifo path perm;
+    Unix.openfile path [Unix.O_RDWR] perm
+
+let read_fifo f fd =
+  let bufsize = 16 in
+  let buf = Bytes.create bufsize in
+    while true; do
+      let c = Unix.read fd buf 0 bufsize in
+        f (Bytes.sub_string buf 0 (c - 1))
+    done
 
 let () =
   let app = new Uiapp.application ({
@@ -147,25 +134,16 @@ let () =
     }:Pomodoro.model) Pomodoro.update Pomodoro.view in
     app#render ();
   let _thread = Thread.create (fun _ ->
-      let t = 1 in
+      let t = 20 in
       while true; do
         Unix.sleep t;
         app#process (Tick t)
       done
     ) () in
-  let ch = open_fifo "/tmp/pipe2egg.sock" in
-  let running = ref true in
-    while !running; do
-      try
-        while true; do
-          input_line ch
-          |> msg_of_string
-          |> (function
-              | Ok u -> app#process u
-              | Error e -> print_endline e
-            )
-        done
-      with
-      | End_of_file -> ()
-      | _ -> running := false
-    done
+  open_fifo "/tmp/pipe2egg.sock"
+  |> read_fifo (fun str -> msg_of_string str
+                           |> (function
+                               | Ok u -> app#process u
+                               | Error e -> print_endline e
+                             )
+               )

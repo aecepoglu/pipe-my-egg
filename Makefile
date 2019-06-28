@@ -1,8 +1,8 @@
-MYEXE = _build/default/pipe2egg.exe
+MYEXE = _build/default/pipemyegg.exe
 PREFIX = /usr/local/bin
 
 $(MYEXE): *.ml
-	dune build pipe2egg.exe
+	dune build pipemyegg.exe
 
 run: $(MYEXE)
 	$(MYEXE)
@@ -11,7 +11,7 @@ clean:
 	rm -rf _build/
 
 install: $(MYEXE)
-	cp _build/default/pipe2egg.exe $(PREFIX)/pomodoro
+	cp _build/default/pipemyegg.exe $(PREFIX)/pomodoro
 
 uninstall:
 	rm $(PREFIX)/pomodoro

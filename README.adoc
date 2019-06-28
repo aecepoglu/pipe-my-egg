@@ -1,4 +1,4 @@
-= pipe2egg
+= pipe my egg
 
 (TODO logo)
 
@@ -13,12 +13,12 @@ A command-line pomodoro timer that's designed to be integrated into your status 
 pomodoro
 ----
 
-And the pomodoro application will start listening to messages on the named pipe `/tmp/pipe2egg.sock`.
+And the pomodoro application will start listening to messages on the named pipe `/tmp/pipemyegg.sock`.
 The messages you can send are documented in the <<states-and-messages,States & Messages>> section
 
 .In a different terminal window
 ----
-echo 'play' >> /tmp/pipe2egg.sock
+echo 'play' >> /tmp/pipemyegg.sock
 ----
 
 [[states-and-messages]]
@@ -109,5 +109,5 @@ Legends:  +---------+
 == Install
 
 1. clone git repo
-2. `make`
+my. `make`
 3. `make install` or `make PREFIX=... install`
