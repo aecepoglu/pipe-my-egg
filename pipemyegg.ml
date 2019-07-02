@@ -14,7 +14,7 @@ let timer_defs = [|
 let string_of_timerdef x = Printf.sprintf "%d/%d/%d"
                              (x.work / 60) (x.break / 60) (x.long_break / 60)
 
-let timestring_of_seconds x = Printf.sprintf "%dm" (x / 60)
+let timestring_of_seconds x = Printf.sprintf "%dm" ((x / 60) + 1)
 
 let tap f x = f x; x
 
