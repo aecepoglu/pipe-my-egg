@@ -13,7 +13,7 @@ let timer_defs = [|
 let string_of_timerdef x = Printf.sprintf "%d/%d/%d"
                              (x.work / 60) (x.break / 60) (x.long_break / 60)
 
-let timestring_of_seconds x = Printf.sprintf "%dm" ((x / 60) + 1)
+let timestring_of_seconds x = Printf.sprintf "%dm" (((x - 1) / 60) + 1)
 
 let tap f x = f x; x
 
@@ -48,7 +48,7 @@ module Pomodoro = struct
         | WaitRest _ -> "Waiting to start rest"
         | Finished -> "end"
       ) in
-    Notification.notify ~summary ()
+    Notification.notify ~summary ~timeout:0 ()
     |> Lwt_main.run
     |> ignore
 
