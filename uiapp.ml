@@ -1,17 +1,22 @@
 type 'a model_t = 'a
 type 'm view_t = 'm -> unit
-type ('e, 'm) update_t = 'm -> 'e -> 'm
+type ('m, 'e) update_t = 'm -> 'e -> 'm
 
-class ['m, 'e] application model update view = object(_self)
-  val mutable model : 'm model_t = model
-  val view : 'm view_t = view
-  val update : ('e, 'm) update_t = update
+module App = struct
+  type ('m, 'e) t = {
+    mutable model: 'm model_t;
+    update: ('m, 'e) update_t;
+    view: 'm view_t
+  }
 
-  method render () =
-    view model;
+  let init (m:'a) (u: 'a -> 'e -> 'a) (v: 'a -> unit) :('a, 'e) t = {
+    model = m;
+    update = u;
+    view = v;
+  }
 
-  method process msg =
-    model <- update model msg;
-    view model;
+  let process_event t ev =
+    t.model <- t.update t.model ev;
+    t.view t.model
 end
 

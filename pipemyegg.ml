@@ -8,7 +8,6 @@ let timer_defs = [|
   {work = 25 * 60; break = 5 * 60; long_break = 30 * 60};
   {work = 50 * 60; break = 10 * 60; long_break = 60 * 60};
   {work = 15 * 60; break = 5 * 60; long_break = 15 * 60};
-  {work = 15; break = 5; long_break = 10};
 |]
 
 let string_of_timerdef x = Printf.sprintf "%d/%d/%d"
@@ -127,23 +126,24 @@ let read_fifo f fd =
     done
 
 let () =
-  let app = new Uiapp.application ({
+  let open Uiapp in
+  let app = App.init ({
       state = Idle;
       cycle = 0;
       def = timer_defs.(0);
-    }:Pomodoro.model) Pomodoro.update Pomodoro.view in
-    app#render ();
+    }: Pomodoro.model) Pomodoro.update Pomodoro.view in
+  Pomodoro.view app.model;
   let _thread = Thread.create (fun _ ->
       let t = 20 in
       while true; do
         Unix.sleep t;
-        app#process (Tick t)
+        App.process_event app (Tick t)
       done
     ) () in
   open_fifo "/tmp/pipe2egg.sock"
   |> read_fifo (fun str -> msg_of_string str
                            |> (function
-                               | Ok u -> app#process u
+                               | Ok u -> App.process_event app u
                                | Error e -> print_endline e
                              )
                )
