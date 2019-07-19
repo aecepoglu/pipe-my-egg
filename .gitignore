@@ -2,3 +2,5 @@ _build
 _opam
 .git
 .merlin
+node_modules/
+docs/

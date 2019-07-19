@@ -1,8 +1,15 @@
-MYEXE = _build/default/pipemyegg.exe
+MYEXE = _build/default/cliapp/pipemyegg.exe
+WEBDEMO = _build/default/webdemo/code.bc.js
 PREFIX = /usr/local/bin
 
-$(MYEXE): *.ml
-	dune build pipemyegg.exe
+$(MYEXE): cliapp/* lib/*
+	dune build cliapp/pipemyegg.exe
+
+$(WEBDEMO): webdemo/* lib/*
+	dune build webdemo/code.bc.js
+	mkdir -p docs/
+	cp $(WEBDEMO) docs/
+	cp webdemo/index.html docs/
 
 run: $(MYEXE)
 	$(MYEXE)

@@ -1,0 +1,5 @@
+(executable
+	(name pipemyegg)
+	(libraries mylib unix threads obus.notification)
+)
+
