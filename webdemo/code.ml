@@ -1,6 +1,6 @@
 open Mylib.Pomodoro
 
-let string_of_seconds x = Printf.sprintf "%d:%d" (x / 60) (x mod 60)
+let string_of_seconds x = Printf.sprintf "%d:%02d" (x / 60) (x mod 60)
 
 let string_of_timerdef (x:Mylib.Pomodoro.timer_definition) = Printf.sprintf "%s/%s/%s"
                                                                (string_of_seconds x.work)
@@ -9,27 +9,32 @@ let string_of_timerdef (x:Mylib.Pomodoro.timer_definition) = Printf.sprintf "%s/
 
 let view (model:Pomodoro.model) =
   let open Vdom in
-  let button txt msg = input [] ~a:[onclick (fun _ -> msg); type_button; value txt] in
+  let button ?(attrs=[]) txt msg = input [] ~a:([ type_button;
+                                                  onclick (fun _ -> msg);
+                                                  value txt] @ attrs) in
   let str = (match model.state with
-    | Idle -> "Idle"
-    | Setting i -> string_of_timerdef (timer_defs.(i))
-    | WaitWork _ -> "Click to start working"
-    | Work i -> "Working " ^ (string_of_seconds i)
-    | WaitRest _ -> "Click here to start your break"
-    | Rest i -> "Resting " ^ (string_of_seconds i)
-    | Finished -> "Finished"
+      | Idle -> "Idle"
+      | Setting i -> string_of_timerdef (timer_defs.(i))
+      | WaitWork _ -> "'OK' to start working"
+      | Work i -> "Working " ^ (string_of_seconds i)
+      | WaitRest _ -> "'OK' to start your break"
+      | Rest i -> "Resting " ^ (string_of_seconds i)
+      | Finished -> "Finished"
     )
   in
-    div ~a:[attr "id" "app"] [
-      div ~a:[attr "id" "display"] [text str];
-      elt "br" [];
-      button "OK" Play;
-      button "Next" Next;
-    ]
+  div ~a:[attr "id" "app"] [
+    div ~a:[attr "id" "display"] [text str];
+    div [
+      (text "Cycle: ");
+      (text (string_of_int (1 + model.cycle)));
+      (text "/3");
+    ];
+    button "OK" Play;
+    button ~attrs:[disabled (match model.state with Setting _ -> false | _ -> true)] "Next" Next
+  ]
 
 let () =
   let open Js_browser in
-  let open Mylib.Pomodoro in
   let app = Vdom.simple_app
               ~init:({state = Idle;
                       cycle = 0;

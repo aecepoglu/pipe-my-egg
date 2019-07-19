@@ -1,10 +1,10 @@
 = pipe my egg
 
-(TODO logo)
+image::sunset.jpg[logo]
 
 A command-line pomodoro timer that's designed to be integrated into your status bar.
 
-(TODO demo video)
+You can view an online demo here: http://aecepoglu.github.io/pipe-my-egg
 
 == Usage
 
