@@ -6,6 +6,33 @@ A command-line pomodoro timer that's designed to be integrated into your status 
 
 You can view an online demo here: http://aecepoglu.github.io/pipe-my-egg
 
+== Integrations
+
+By example I'll showcase how it integrates with https://github.com/polybar/polybar[polybar] and https://github.com/geommer/yabar[yabar], but it can be integrated with any status-bar application that can follow the output of a commandThe program is a simple command-line application, so any status-bar that can follow the output of a command-line program.
+
+Polybar Configuration: ~/.config/polybar/config
+[source,ini]
+----
+[module/pomodoro]
+type = custom/script
+
+exec = "pomodoro"
+tail = true
+
+click-middle = echo 'play' >> /tmp/pipe2egg.sock
+scroll-down = echo 'next' >> /tmp/pipe2egg.sock
+----
+
+Yabar Configuration: ~/.config/yabar/yabar.conf
+----
+pomodoro: {
+	exec: "pomodoro";
+	type: "persist";
+	command-button2: "echo 'play' >> /tmp/pipe2egg.sock";
+	command-button4: "echo 'next' >> /tmp/pipe2egg.sock";
+}
+----
+
 == Usage
 
 .In a terminal window
