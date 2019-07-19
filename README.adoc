@@ -1,6 +1,6 @@
-= pipe my egg
+image::logo.png[LOGO,128,128]
 
-image::sunset.jpg[logo]
+= pipe my egg
 
 A command-line pomodoro timer that's designed to be integrated into your status bar.
 
