@@ -8,7 +8,7 @@ You can view an online demo here: http://aecepoglu.github.io/pipe-my-egg
 
 == Integrations
 
-By example I'll showcase how it integrates with https://github.com/polybar/polybar[polybar] and https://github.com/geommer/yabar[yabar], but it can be integrated with any status-bar application that can follow the output of a commandThe program is a simple command-line application, so any status-bar that can follow the output of a command-line program.
+By example I'll showcase how it integrates with https://github.com/polybar/polybar[polybar] and https://github.com/geommer/yabar[yabar], but it can be integrated with any status-bar application that can follow the output of a command.
 
 Polybar Configuration: ~/.config/polybar/config
 [source,ini]
