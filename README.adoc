@@ -51,87 +51,36 @@ echo 'play' >> /tmp/pipemyegg.sock
 [[states-and-messages]]
 === States & Messages
 
-.Usage flowchart
+.Usage flowchart (github's theme seems to have broken it for me but it's correctly aligned. I swear!)
 ----
-
-               +-------+
-               | IDLE  +<----------------------+
-               +---+---+                       |
-                   |                           |
-                   |play                       |
-                   v                           |
-             +-----+-----+                     |
-             |  SETTING  +<-------+            |
-             +----+--+---+        |            |
-                  |  |            |            |
-                  |  |   next     |            |
-              play|  +------------+            |
-                  |                            |
-                  |                            |
-                  v                            |
-      play    +---+----+                       |
-+-------------+  WORK  +<-----------+          |
-|             +---+----+            |          |
-|                 |                 |          |
-|            (time over)            |play      |
-|                 |                 |          |
-|                 v                 |          |
-|          +------+-------   +------+------+   |
-|          |  WAIT REST  |   | WAIT WORK   |   |
-|          +------+-------   +------+------+   |
-|                 |                 ^          |
-|                 |play             |          |
-|                 |                 |          |
-|                 v                 |          |
-|     play    +---+----+            |          |
-+<------------+  REST  |            |          |
-|             +---+----+            |          |
-|                 |                 |no        |
-|            (time over)            |          |
-|                 |                 |          |
-|                 v                 |          |
-|        +------------------+       |          |
-|      +----------------------+     |          |
-|      | | repated 3 times  | +-----+          |
-|      +----------------------+                |
-|        +------------------+                  |
-|                 |                            |
-|                 |yes                         |
-|                 |                            |
-|                 v                            |
-|          +------+-----+                      |
-+--------> |  FINISHED  +----------------------+
-           +------------+
-
-
-
-Legends:  +---------+
-          |  STATE  |
-          +---------+
-
-          +---------+  action   +---------+
-          |  STATE  +---------->+  STATE  |
-          +---------+           +---------+
-
-          +---------+  (event)  +---------+
-          |  STATE  +---------->+  STATE  |
-          +---------+           +---------+
-
-            +------------------+
-          +----------------------+
-          | |    condition     | |
-          +----------------------+
-            +------------------+
+             IDLE <---------------------┐
+             |                         |
+         play|                         |
+             v         next            |
+           SETTINGS <---┐              |
+             |  |       |              |
+         play|  └-------┘              |
+             |                         |
+    play     v               play      |
+   ┌--------WORK <---------------┐     |
+   |         |                   |     |
+   |         |(time over)        |     |
+   |         v                   |     |
+   |      WAIT REST          WAIT WORK |
+   |         |                   ^     |
+   |         |play               |     |
+   |         v                   |     |
+   ├------- REST                 |     |
+   |         |                   |     |
+   |         |(time over)        |     |
+   |         v                   |     |
+   |   repeated 3 times? --------┘     |
+   |         |              no         |
+   |         |yes                      |
+   |         v                         |
+   └----> FINISHED --------------------┘
 
 ----
-
-- IDLE (`IDL`)
-- SETTING (`W/R/L`) : "Work for W minutes, Rest for R minutes" repeated 3 times. Last rest session is L minutes long
-- WORK `W x`: x minutes of work left
-- REST `R x`: x minutes of rest left
-- WAIT WORK `w x`: waiting to start x minutes of work
-- WAIT REST `r x`: waiting to start x minutes of rest
-- FINISHED `FIN`: pomodoro session finished
 
 == Install
 
